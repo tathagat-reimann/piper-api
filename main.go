@@ -46,7 +46,9 @@ func converTextToVoice(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("Will try to convert " + t.Text + " to voice")
 
-	piper_command := "echo '" + t.Text + "' | /home/tathagat/tmp/piper/piper --model /home/tathagat/tmp/piper/voices/en_US-hfc_male-medium.onnx -d /home/tathagat/tmp/piper/output/"
+	piper_executable := os.Getenv("PIPER_EXECUTABLE")
+
+	piper_command := "echo '" + t.Text + "' | " + piper_executable + " --model /home/tathagat/tmp/piper/voices/en_US-hfc_male-medium.onnx -d /home/tathagat/tmp/piper/output/"
 	out, err := exec.Command("bash", "-c", piper_command).Output()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
