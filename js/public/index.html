@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple HTML Page</title>
+</head>
+<body>
+    <h1>Welcome to My Simple HTML Page</h1>
+    <p>This is a paragraph of text on my simple HTML page.</p>
+    <textarea rows="4" cols="50" placeholder="Enter your text here..."></textarea>
+    </br>
+    <button type="button">Convert to audio</button>
+    <script>
+        document.querySelector('button').addEventListener('click', function() {
+            const text = document.querySelector('textarea').value;
+            fetch('http://docker.local:3333/converTextToVoice', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ Text: text })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>

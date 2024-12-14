@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -17,13 +16,8 @@ type TextToConvert struct {
 	Text string
 }
 
-func hello(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("got /hello request\n")
-	io.WriteString(w, "Hello, World!\n")
-}
-
 func main() {
-	http.HandleFunc("/", hello)
+	http.Handle("/", http.FileServer(http.Dir("./js/public")))
 	http.HandleFunc("/converTextToVoice", converTextToVoice)
 	err := http.ListenAndServe(":3333", nil)
 	if errors.Is(err, http.ErrServerClosed) {
