@@ -62,13 +62,14 @@ func converTextToVoice(w http.ResponseWriter, r *http.Request) {
 
 	// call piper to convert the text to voice
 	piper_executable := os.Getenv("PIPER_EXECUTABLE")
-	// TODO output directory as variable
+	piper_output_dir := os.Getenv("PIPER_OUTPUT_DIR")
+	piper_model := os.Getenv("PIPER_MODEL_FILE_ONNX")
 
 	randomFileName := time.Now().Format("20060102150405")
 
 	piper_command := "cat '" + filePath + "' | " + piper_executable +
-		" --model /home/tathagat/tmp/piper/voices/en_US-hfc_male-medium.onnx -f /home/tathagat/tmp/piper/output/" +
-		randomFileName + ".wav"
+		" --model " + piper_model +
+		" -f " + piper_output_dir + "/" + randomFileName + ".wav"
 	out, err := exec.Command("bash", "-c", piper_command).Output()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
