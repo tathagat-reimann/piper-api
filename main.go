@@ -9,8 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"strings"
-	"time"
 )
 
 type TextToConvert struct {
@@ -44,50 +42,46 @@ func converTextToVoice(w http.ResponseWriter, r *http.Request) {
 
 	//log.Println("Will try to convert " + t.Text + " to voice")
 	// save the text to a temp file
-	file, err := os.CreateTemp("", "text-to-convert-*.txt")
+	in_file, err := os.CreateTemp("", "text-to-convert-*.txt")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer file.Close()
+	defer in_file.Close()
 
-	_, err = file.WriteString(t.Text)
+	_, err = in_file.WriteString(t.Text)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	filePath := file.Name()
+	filePath := in_file.Name()
 	log.Printf("Saved text to file: %s", filePath)
 
-	// call piper to convert the text to voice
+	// read ENV variables
 	piper_executable := os.Getenv("PIPER_EXECUTABLE")
-	piper_output_dir := os.Getenv("PIPER_OUTPUT_DIR")
 	piper_model := os.Getenv("PIPER_MODEL_FILE_ONNX")
 
-	randomFileName := time.Now().Format("20060102150405")
-
-	piper_command := "cat '" + filePath + "' | " + piper_executable +
-		" --model " + piper_model +
-		" -f " + piper_output_dir + "/" + randomFileName + ".wav"
-	out, err := exec.Command("bash", "-c", piper_command).Output()
+	// create a temp file for the output
+	out_file, err := os.CreateTemp("", "output-*.wav")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	generated_file := strings.TrimSpace(string(out))
+	// call piper to convert the text to voice
+	piper_command := "cat '" + filePath + "' | " + piper_executable +
+		" --model " + piper_model +
+		" -f " + out_file.Name()
+	_, err = exec.Command("bash", "-c", piper_command).Output()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	log.Printf("Piper generated voice file: %s", generated_file)
-
-	/*
-		stat, _ := os.Stat(generated_file)
-		log.Println(stat)
-	*/
-
-	//http.ServeFile(w, r, string(out))
+	// send the file to the client
 	w.Header().Set("Content-Disposition", "attachment;")
-	file_bytes, err := os.ReadFile(generated_file)
+	file_bytes, err := os.ReadFile(out_file.Name())
 	if err != nil {
 		//panic(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
