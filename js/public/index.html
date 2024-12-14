@@ -21,9 +21,10 @@
                 },
                 body: JSON.stringify({ Text: text })
             })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Success:', data);
+            .then( res => res.blob() )
+            .then( blob => {
+                var file = window.URL.createObjectURL(blob);
+                window.location.assign(file);
             })
             .catch((error) => {
                 console.error('Error:', error);

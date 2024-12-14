@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 type TextToConvert struct {
@@ -17,7 +18,10 @@ type TextToConvert struct {
 }
 
 func main() {
+	// HTML
 	http.Handle("/", http.FileServer(http.Dir("./js/public")))
+
+	// API
 	http.HandleFunc("/converTextToVoice", converTextToVoice)
 	err := http.ListenAndServe(":3333", nil)
 	if errors.Is(err, http.ErrServerClosed) {
@@ -29,7 +33,7 @@ func main() {
 }
 
 func converTextToVoice(w http.ResponseWriter, r *http.Request) {
-	log.Println(r.Body)
+	//log.Println(r.Body)
 	decoder := json.NewDecoder(r.Body)
 	var t TextToConvert
 	err := decoder.Decode(&t)
@@ -38,11 +42,33 @@ func converTextToVoice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println("Will try to convert " + t.Text + " to voice")
+	//log.Println("Will try to convert " + t.Text + " to voice")
+	// save the text to a temp file
+	file, err := os.CreateTemp("", "text-to-convert-*.txt")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
 
+	_, err = file.WriteString(t.Text)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	filePath := file.Name()
+	log.Printf("Saved text to file: %s", filePath)
+
+	// call piper to convert the text to voice
 	piper_executable := os.Getenv("PIPER_EXECUTABLE")
+	// TODO output directory as variable
 
-	piper_command := "echo '" + t.Text + "' | " + piper_executable + " --model /home/tathagat/tmp/piper/voices/en_US-hfc_male-medium.onnx -d /home/tathagat/tmp/piper/output/"
+	randomFileName := time.Now().Format("20060102150405")
+
+	piper_command := "cat '" + filePath + "' | " + piper_executable +
+		" --model /home/tathagat/tmp/piper/voices/en_US-hfc_male-medium.onnx -f /home/tathagat/tmp/piper/output/" +
+		randomFileName + ".wav"
 	out, err := exec.Command("bash", "-c", piper_command).Output()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -60,12 +86,12 @@ func converTextToVoice(w http.ResponseWriter, r *http.Request) {
 
 	//http.ServeFile(w, r, string(out))
 	w.Header().Set("Content-Disposition", "attachment;")
-	file, err := os.ReadFile(generated_file)
+	file_bytes, err := os.ReadFile(generated_file)
 	if err != nil {
 		//panic(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.Write(file)
+	w.Write(file_bytes)
 }
