@@ -19,7 +19,7 @@ type TextToConvert struct {
 
 func main() {
 	// HTML
-	http.Handle("/", http.FileServer(http.Dir("./js/public")))
+	http.Handle("/", http.FileServer(http.Dir("./static")))
 
 	// API
 	http.HandleFunc("/converTextToVoice", converTextToVoice)
