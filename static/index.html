@@ -15,7 +15,7 @@
     <script>
         document.querySelector('button').addEventListener('click', function() {
             const text = document.querySelector('textarea').value;
-            fetch('http://docker.local:3333/converTextToVoice', {
+            fetch(window.location.href+'converTextToVoice', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
